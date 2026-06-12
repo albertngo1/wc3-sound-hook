@@ -39,7 +39,7 @@ e.g. `SOUND_PACK=starcraft claude`, or add `"env": {"SOUND_PACK": "all"}` to you
 |---|---:|---|
 | `wc3` | 91 | Reign of Chaos **+ The Frozen Throne** unit/hero "Ready" lines — 4 races + neutral + TFT heroes (Illidan, Arthas, Thrall, Kael'thas, Sylvanas, Maiev, Crypt Lord, Warden…) |
 | `starcraft` | 107 | Terran / Protoss / Zerg unit ready + acknowledgement lines |
-| `hearthstone` | 20 | one signature line per iconic card — Lord Jaraxxus's summon, Grim Patron ("Everyone, get in here!"), Ragnaros ("By fire be purged!"), SI:7 Agent ("This guy's toast!" / "Disguised Toast"), Leeroy Jenkins, Millhouse, Mysterious Challenger, Sen'jin ("Taz'dingo!"), Mechwarper, Knife Juggler… |
+| `hearthstone` | 36 | one signature line per iconic card — Jaraxxus, Grim Patron ("Everyone, get in here!"), Ragnaros ("By fire be purged!"), SI:7 Agent ("This guy's toast!" / "Disguised Toast"), Mal'Ganis ("I am a turtle!"), Leeroy, Millhouse, the Old Gods (C'Thun/Yogg-Saron/N'Zoth/Y'Shaarj), Kel'Thuzad, Reno ("We're gonna be rich!"), Annoy-o-Tron, Tirion, Al'Akir, Undertaker, Loot Hoarder, Quartermaster, Doomsayer… |
 
 Drop your own `~/.claude/sounds/<anything>/complete/*.wav` and it becomes a selectable pack too.
 
