@@ -5,6 +5,10 @@ Play a classic RTS/Blizzard voice line every time **Claude Code** finishes a tur
 Started as Warcraft III "Ready" lines; now a small **multi-game sound-pack library** that rotates
 across **Warcraft III**, **StarCraft**, and **Hearthstone**.
 
+**By default it randomizes:** each Claude Code session picks one random pack and sticks with it for
+that whole session, so different sessions sound like different games. Pin a single game (or shuffle
+every turn) with `SOUND_PACK` — see [Choosing a pack](#choosing-a-pack).
+
 ## Install
 
 ```bash
