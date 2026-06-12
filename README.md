@@ -39,7 +39,7 @@ e.g. `SOUND_PACK=starcraft claude`, or add `"env": {"SOUND_PACK": "all"}` to you
 |---|---:|---|
 | `wc3` | 91 | Reign of Chaos **+ The Frozen Throne** unit/hero "Ready" lines — 4 races + neutral + TFT heroes (Illidan, Arthas, Thrall, Kael'thas, Sylvanas, Maiev, Crypt Lord, Warden…) |
 | `starcraft` | 107 | Terran / Protoss / Zerg unit ready + acknowledgement lines |
-| `hearthstone` | 30 | one signature line per iconic card, curated toward short/funny/misheard-meme lines — Jaraxxus, Grim Patron ("Everyone, get in here!"), SI:7 Agent ("This guy's toast!" / "Disguised Toast"), Mal'Ganis ("I am a turtle!"), Frothing Berserker ("My blade be thirsty!"), Annoy-o-Tron ("Hello hello hello!"), Abusive Sergeant, Leeroy, Millhouse, Kel'Thuzad, Reno ("We're gonna be rich!"), Tirion, Al'Akir, Undertaker, Loot Hoarder, Quartermaster, Doomsayer… |
+| `hearthstone` | 29 | one signature line per iconic card, curated toward short/funny/misheard-meme lines — Grim Patron ("Everyone, get in here!"), SI:7 Agent ("This guy's toast!" / "Disguised Toast"), Mal'Ganis ("I am a turtle!"), Frothing Berserker ("My blade be thirsty!"), Annoy-o-Tron ("Hello hello hello!"), Abusive Sergeant, Leeroy, Millhouse, Kel'Thuzad, Reno ("We're gonna be rich!"), Tirion, Al'Akir, Undertaker, Loot Hoarder, Quartermaster, Doomsayer… |
 
 Drop your own `~/.claude/sounds/<anything>/complete/*.wav` and it becomes a selectable pack too.
 
