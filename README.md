@@ -39,7 +39,7 @@ e.g. `SOUND_PACK=starcraft claude`, or add `"env": {"SOUND_PACK": "all"}` to you
 |---|---:|---|
 | `wc3` | 91 | Reign of Chaos **+ The Frozen Throne** unit/hero "Ready" lines — 4 races + neutral + TFT heroes (Illidan, Arthas, Thrall, Kael'thas, Sylvanas, Maiev, Crypt Lord, Warden…) |
 | `starcraft` | 107 | Terran / Protoss / Zerg unit ready + acknowledgement lines |
-| `hearthstone` | 22 | iconic minion **summon** voice lines — Leeroy Jenkins, Ragnaros, Millhouse, Deathwing, Edwin, the dragons, Gruul… |
+| `hearthstone` | 57 | the genuinely iconic/meme voice lines (play + attack + death per card) — Lord Jaraxxus, Grim Patron ("Everyone, get in here!"), Leeroy Jenkins, Ragnaros ("By fire be purged!"), Millhouse, Mysterious Challenger, Sen'jin ("Taz'dingo!"), Mechwarper, Knife Juggler… |
 
 Drop your own `~/.claude/sounds/<anything>/complete/*.wav` and it becomes a selectable pack too.
 
