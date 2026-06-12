@@ -37,9 +37,9 @@ e.g. `SOUND_PACK=starcraft claude`, or add `"env": {"SOUND_PACK": "all"}` to you
 
 | pack | clips | what |
 |---|---:|---|
-| `wc3` | 77 | Reign of Chaos unit/hero "Ready" lines (all 4 races + neutral) |
+| `wc3` | 91 | Reign of Chaos **+ The Frozen Throne** unit/hero "Ready" lines — 4 races + neutral + TFT heroes (Illidan, Arthas, Thrall, Kael'thas, Sylvanas, Maiev, Crypt Lord, Warden…) |
 | `starcraft` | 107 | Terran / Protoss / Zerg unit ready + acknowledgement lines |
-| `hearthstone` | 44 | hero emotes — Greetings / Thanks / Well-Played / Threaten |
+| `hearthstone` | 22 | iconic minion **summon** voice lines — Leeroy Jenkins, Ragnaros, Millhouse, Deathwing, Edwin, the dragons, Gruul… |
 
 Drop your own `~/.claude/sounds/<anything>/complete/*.wav` and it becomes a selectable pack too.
 
