@@ -21,6 +21,80 @@
 SOUNDS_DIR="$HOME/.claude/sounds"
 SSH_USER="${WC3_SSH_USER:-$(cat "$HOME/.claude/.wc3_ssh_user" 2>/dev/null || id -un)}"  # reverse-play user: env > ~/.claude/.wc3_ssh_user > current user
 SSH_KEY="$HOME/.ssh/wc3_reverse_play"
+# Local-playback volume (env > ~/.claude/.wc3_volume > unset). Empty = afplay default (1.0).
+# Reverse-play sends a plain `afplay <path>` so it works with an afplay-only forced-command key;
+# set volume on the SSH client side if you need it there.
+WC3_VOLUME="${WC3_VOLUME:-$(cat "$HOME/.claude/.wc3_volume" 2>/dev/null | tr -d '[:space:]')}"
+
+# --- reliability / observability (the reverse-play path is the only one that can silently die) -
+LOG_DIR="$HOME/.claude/logs"
+WC3_LOG="$LOG_DIR/wc3.log"
+LAST_OK="$HOME/.claude/.wc3-last-ok"     # touched on a successful reverse-play
+
+wc3_log() {  # append a timestamped line to wc3.log, never fatal
+    mkdir -p "$LOG_DIR" 2>/dev/null
+    printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S')" "$1" >> "$WC3_LOG" 2>/dev/null || true
+}
+wc3_fail() {  # log a failure (reverse-play is fire-and-forget, so this is the only trace)
+    wc3_log "FAIL: $1"
+}
+
+_file_age_secs() {  # seconds since mtime of $1, or empty if missing
+    [ -f "$1" ] || return 1
+    local now mt; now="$(date +%s)"; mt="$(stat -f %m "$1" 2>/dev/null)" || return 1
+    printf '%s' "$((now - mt))"
+}
+
+wc3_doctor() {  # print PASS/FAIL per rung; exit 0 always (diagnostic)
+    local host="${WC3_DOCTOR_HOST:-${SSH_CONNECTION%% *}}"
+    printf 'wc3 reverse-play doctor\n'
+    # file presence
+    local n; n="$(find "$SOUNDS_DIR" -type f \( -iname '*.wav' -o -iname '*.mp3' \) 2>/dev/null | wc -l | tr -d ' ')"
+    if [ "${n:-0}" -gt 0 ]; then printf '  PASS  sounds present (%s clips)\n' "$n"; else printf '  FAIL  no sound clips under %s\n' "$SOUNDS_DIR"; fi
+    # key
+    if [ -f "$SSH_KEY" ]; then printf '  PASS  reverse-play key present (%s)\n' "$SSH_KEY"; else printf '  FAIL  missing key %s\n' "$SSH_KEY"; fi
+    # last success freshness
+    local age; if age="$(_file_age_secs "$LAST_OK")"; then printf '  INFO  last successful reverse-play: %sh ago\n' "$((age/3600))"; else printf '  INFO  no successful reverse-play recorded yet\n'; fi
+    # liveness + auth (need a target host)
+    if [ -n "$host" ]; then
+        if command -v nc >/dev/null 2>&1 && nc -z -G1 -w1 "$host" 22 >/dev/null 2>&1; then
+            printf '  PASS  liveness: %s:22 reachable\n' "$host"
+            # Behavioral probe: a legit afplay must be allowed; if the key is locked to afplay with a
+            # forced command in the client's authorized_keys, an arbitrary command must be denied.
+            local sopts=(-o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=accept-new -i "$SSH_KEY" -o IdentitiesOnly=yes)
+            local clip rel pos_rc neg_rc
+            # positive: a legit afplay of a real clip must be ALLOWED (also audibly confirms the channel)
+            clip="$(find "$SOUNDS_DIR" -type f \( -iname '*.wav' -o -iname '*.mp3' \) 2>/dev/null | head -1)"
+            if [ -n "$clip" ]; then
+                rel="~/.claude/${clip#"$HOME/.claude/"}"
+                ssh "${sopts[@]}" "$SSH_USER@$host" "afplay $rel" >/dev/null 2>&1; pos_rc=$?
+            else
+                pos_rc=1
+            fi
+            # negative: does a non-afplay command run? (yes = key is unrestricted)
+            ssh "${sopts[@]}" "$SSH_USER@$host" "id" >/dev/null 2>&1; neg_rc=$?
+            if [ "$pos_rc" -ne 0 ] && [ "$neg_rc" -ne 0 ]; then
+                printf '  FAIL  auth: client refused the key, or afplay/sound path missing on the client\n'
+            elif [ "$pos_rc" -ne 0 ]; then
+                printf '  FAIL  auth: key works but afplay failed — sounds missing on the client?\n'
+            elif [ "$neg_rc" -eq 0 ]; then
+                printf '  PASS  auth: afplay works (played one clip)\n'
+                printf '  WARN  key is unrestricted: `id` ran over it — consider a forced command in the client authorized_keys (see README)\n'
+            else
+                printf '  PASS  auth: afplay allowed, shell command denied — forced command enforced (played one clip)\n'
+            fi
+        else
+            printf '  FAIL  liveness: %s:22 unreachable\n' "$host"
+        fi
+    else
+        printf '  SKIP  liveness/auth: no target host (run over SSH or set WC3_DOCTOR_HOST=<client-ip>)\n'
+    fi
+    exit 0
+}
+
+case "${1:-}" in
+    --doctor)           wc3_doctor ;;
+esac
 
 # --- read the hook's stdin JSON (Claude passes session_id etc.); skip if run interactively ----
 sid=""
@@ -72,10 +146,24 @@ if [ -n "${SSH_CONNECTION:-}" ]; then
     CLIENT_IP="${SSH_CONNECTION%% *}"
     ssh_opts=(-o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=accept-new)
     [ -f "$SSH_KEY" ] && ssh_opts+=(-i "$SSH_KEY" -o IdentitiesOnly=yes)
-    ssh "${ssh_opts[@]}" "$SSH_USER@$CLIENT_IP" "afplay ~/.claude/$REL" >/dev/null 2>&1 &
+    # Backgrounded so the Stop hook returns instantly; the subshell owns the fallback ladder.
+    {
+        # Rung 1: sub-second liveness gate — don't pay the 3s ssh timeout on a sleeping/absent client.
+        if command -v nc >/dev/null 2>&1 && ! nc -z -G1 -w1 "$CLIENT_IP" 22 >/dev/null 2>&1; then
+            wc3_fail "client $CLIENT_IP:22 unreachable (liveness gate)"
+        elif ssh "${ssh_opts[@]}" "$SSH_USER@$CLIENT_IP" "afplay ~/.claude/$REL" >/dev/null 2>&1; then
+            touch "$LAST_OK" 2>/dev/null   # success — shown by --doctor
+        else
+            wc3_fail "reverse-play to $SSH_USER@$CLIENT_IP failed (ssh/afplay)"
+        fi
+    } &
 else
     # Local playback
-    afplay "$HOME/.claude/$REL" >/dev/null 2>&1 &
+    if [ -n "$WC3_VOLUME" ]; then
+        afplay -v "$WC3_VOLUME" "$HOME/.claude/$REL" >/dev/null 2>&1 &
+    else
+        afplay "$HOME/.claude/$REL" >/dev/null 2>&1 &
+    fi
 fi
 
 # --- terminal nudge ------------------------------------------------------------------------

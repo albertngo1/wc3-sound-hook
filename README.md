@@ -51,6 +51,26 @@ runs `afplay` on the SSH client via a dedicated key `~/.ssh/wc3_reverse_play` �
 same `~/.claude/sounds/` and that key's public half in its `authorized_keys`. If it isn't set up the
 SSH call fails fast and only the terminal bell fires. Set `WC3_SSH_USER` if your client username differs.
 
+Optional hardening: lock that key to `afplay` only with a forced command in the client's
+`authorized_keys` (e.g. `command="/path/to/afplay-only-wrapper.sh",no-pty,no-port-forwarding ssh-ed25519 …`).
+The hook only ever sends `afplay ~/.claude/sounds/…`, so a wrapper that allows just that shape is enough.
+
+## Volume
+
+Set `WC3_VOLUME` (e.g. `0.4`) or write the number to `~/.claude/.wc3_volume`. Passed to `afplay -v`
+for local playback; unset = afplay's default (1.0).
+
+## Troubleshooting
+
+```bash
+~/.claude/wc3_complete.sh --doctor                         # over SSH, or:
+WC3_DOCTOR_HOST=<client-ip> ~/.claude/wc3_complete.sh --doctor
+```
+
+Prints PASS / FAIL / WARN for: clips present, reverse-play key present, last successful
+reverse-play, client reachable on port 22, and whether the key can play audio (plus whether it's
+locked to afplay). Failed reverse-plays are logged to `~/.claude/logs/wc3.log`.
+
 ## Uninstall
 
 ```bash
