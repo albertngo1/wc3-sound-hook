@@ -1,13 +1,7 @@
 # wc3-sound-hook
 
-Play a classic RTS/Blizzard voice line every time **Claude Code** finishes a turn — *"Job's done!"*
-
-Started as Warcraft III "Ready" lines; now a small **multi-game sound-pack library** that rotates
-across **Warcraft III**, **StarCraft**, and **Hearthstone**.
-
-**By default it randomizes:** each Claude Code session picks one random pack and sticks with it for
-that whole session, so different sessions sound like different games. Pin a single game (or shuffle
-every turn) with `SOUND_PACK` — see [Choosing a pack](#choosing-a-pack).
+A Claude Code hook that plays a Blizzard game voice line ("Job's done!") each time Claude finishes a turn.
+It's for macOS users who want an audible cue when Claude is waiting on them.
 
 ## Install
 
@@ -17,59 +11,48 @@ cd wc3-sound-hook
 ./install.sh
 ```
 
-The installer copies the sound packs to `~/.claude/sounds/`, drops the hook at
-`~/.claude/wc3_complete.sh`, and idempotently wires a `Stop` hook into `~/.claude/settings.json`.
-Finish a turn in Claude Code and you'll hear it. (macOS — playback uses `afplay`.)
+The installer copies the sounds to `~/.claude/sounds/` and the hook to `~/.claude/wc3_complete.sh`.
+It then adds a `Stop` hook to `~/.claude/settings.json` (using `jq` or `python3`), and won't add it twice.
+Finish a turn in Claude Code to hear it.
+
+**macOS only.** Playback uses `afplay`.
 
 ## Choosing a pack
 
-Set the `SOUND_PACK` environment variable:
+There are three packs: Warcraft III, StarCraft and Hearthstone. By default, each Claude Code session
+picks one at random and keeps it for the whole session.
 
-| `SOUND_PACK` | behaviour |
+Set `SOUND_PACK` to change this:
+
+| `SOUND_PACK` | behavior |
 |---|---|
-| *(unset)* or `random` | **pick one random pack per Claude session** (stays consistent for that session) |
-| `wc3` / `starcraft` / `hearthstone` | always that game |
-| `all` | every clip from every pack, fresh random each turn |
+| unset or `random` | one random pack per session |
+| `wc3`, `starcraft`, `hearthstone` | always that pack |
+| `all` | any clip from any pack, picked fresh each turn |
 
-e.g. `SOUND_PACK=starcraft claude`, or add `"env": {"SOUND_PACK": "all"}` to your `settings.json`.
+For example, `SOUND_PACK=starcraft claude`, or add `"env": {"SOUND_PACK": "all"}` to `settings.json`.
 
 ## Packs
 
-| pack | clips | what |
+| pack | clips | contents |
 |---|---:|---|
-| `wc3` | 91 | Reign of Chaos **+ The Frozen Throne** unit/hero "Ready" lines — 4 races + neutral + TFT heroes (Illidan, Arthas, Thrall, Kael'thas, Sylvanas, Maiev, Crypt Lord, Warden…) |
-| `starcraft` | 107 | Terran / Protoss / Zerg unit ready + acknowledgement lines |
-| `hearthstone` | 29 | one signature line per iconic card, curated toward short/funny/misheard-meme lines — Grim Patron ("Everyone, get in here!"), SI:7 Agent ("This guy's toast!" / "Disguised Toast"), Mal'Ganis ("I am a turtle!"), Frothing Berserker ("My blade be thirsty!"), Annoy-o-Tron ("Hello hello hello!"), Abusive Sergeant, Leeroy, Millhouse, Kel'Thuzad, Reno ("We're gonna be rich!"), Tirion, Al'Akir, Undertaker, Loot Hoarder, Quartermaster, Doomsayer… |
+| `wc3` | 91 | Reign of Chaos and Frozen Throne unit and hero "Ready" lines |
+| `starcraft` | 107 | Terran, Protoss and Zerg ready and acknowledgement lines |
+| `hearthstone` | 29 | One short or funny line per well-known card |
 
-Drop your own `~/.claude/sounds/<anything>/complete/*.wav` and it becomes a selectable pack too.
-
-## Advanced: reverse-play over SSH
-
-If you run Claude Code on a remote host over SSH, the hook can play the sound on the machine you
-**connected from** (your laptop) instead of the remote's speakers. When `$SSH_CONNECTION` is set it
-runs `afplay` on the SSH client via a dedicated key `~/.ssh/wc3_reverse_play` — the client needs the
-same `~/.claude/sounds/` and that key's public half in its `authorized_keys`. If it isn't set up the
-SSH call fails fast and only the terminal bell fires. Set `WC3_SSH_USER` if your client username differs.
-
-Optional hardening: lock that key to `afplay` only with a forced command in the client's
-`authorized_keys` (e.g. `command="/path/to/afplay-only-wrapper.sh",no-pty,no-port-forwarding ssh-ed25519 …`).
-The hook only ever sends `afplay ~/.claude/sounds/…`, so a wrapper that allows just that shape is enough.
+To add your own, put `.wav` or `.mp3` files in `~/.claude/sounds/<name>/complete/`. The folder name
+becomes the pack name. More detail in [docs/packs.md](docs/packs.md).
 
 ## Volume
 
-Set `WC3_VOLUME` (e.g. `0.4`) or write the number to `~/.claude/.wc3_volume`. Passed to `afplay -v`
-for local playback; unset = afplay's default (1.0).
+Set `WC3_VOLUME` (e.g. `0.4`) or write the number to `~/.claude/.wc3_volume`. It's passed to
+`afplay -v`. Unset means afplay's default of 1.0.
 
-## Troubleshooting
+## Running Claude Code over SSH
 
-```bash
-~/.claude/wc3_complete.sh --doctor                         # over SSH, or:
-WC3_DOCTOR_HOST=<client-ip> ~/.claude/wc3_complete.sh --doctor
-```
-
-Prints PASS / FAIL / WARN for: clips present, reverse-play key present, last successful
-reverse-play, client reachable on port 22, and whether the key can play audio (plus whether it's
-locked to afplay). Failed reverse-plays are logged to `~/.claude/logs/wc3.log`.
+If Claude Code runs on a remote host, the hook can play the sound on the laptop you connected from.
+This needs a dedicated SSH key and the same sounds on both machines. Setup, hardening and the
+`--doctor` check are in [docs/reverse-play.md](docs/reverse-play.md).
 
 ## Uninstall
 
@@ -77,12 +60,14 @@ locked to afplay). Failed reverse-plays are logged to `~/.claude/logs/wc3.log`.
 ./uninstall.sh
 ```
 
-## Credits & license
+This removes the hook, the sounds and the pack cache from `~/.claude`. It removes the `Stop` hook
+from `settings.json` only if `python3` is available, and leaves your other hooks alone.
 
-Hook code is MIT-licensed (see `LICENSE`). Original WC3 hook idea:
+## Credits and license
+
+The hook code is MIT-licensed (see `LICENSE`). The original WC3 hook idea is from
 [warmwind/warcraft3-claude-code-sound-hook](https://github.com/warmwind/warcraft3-claude-code-sound-hook).
-Sounds were ripped from [The Sounds Resource](https://www.sounds-resource.com/).
+Sounds came from [The Sounds Resource](https://www.sounds-resource.com/).
 
-**Audio note:** the voice clips are © Blizzard Entertainment, included here for personal,
-non-commercial use only. They are not covered by the MIT license. If you are Blizzard and would like
-them removed, open an issue.
+**The voice clips are © Blizzard Entertainment.** They are included for personal, non-commercial use
+only and are not covered by the MIT license. If you are Blizzard and want them removed, open an issue.
